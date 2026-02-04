@@ -1,0 +1,72 @@
+-- [[ SCRIPT 2: CHECK FILE & HOP SERVER (CHỈ DÀNH CHO baohan_200) ]] --
+
+local Players = game:GetService("Players")
+local TeleportService = game:GetService("TeleportService")
+local HttpService = game:GetService("HttpService")
+local player = Players.LocalPlayer
+
+-- Kiểm tra đúng username
+if player.Name ~= "baohan_200" then
+    warn("⛔ Script này chỉ chạy trên tài khoản: baohan_200")
+    return -- Dừng script ngay lập tức nếu sai tên
+end
+
+local folderName = "mm"
+local checkInterval = 3 -- Check file mỗi 3 giây
+
+print("✅ Đã kích hoạt chế độ săn God's Chalice cho baohan_200")
+
+spawn(function()
+    while true do
+        wait(checkInterval)
+        
+        pcall(function()
+            if not isfolder(folderName) then return end
+            
+            local files = listfiles(folderName)
+            local validServers = {}
+            local currentTime = os.time()
+
+            -- 1. Đọc và lọc các file hợp lệ
+            for _, file in ipairs(files) do
+                if file:sub(-4) == ".txt" then -- Chỉ đọc file .txt
+                    local success, content = pcall(readfile, file)
+                    if success then
+                        local data = HttpService:JSONDecode(content)
+                        
+                        -- Logic: Thời gian hiện tại - Thời gian file < 300 giây (5 phút)
+                        if data.TimeCheck and (currentTime - data.TimeCheck) < 300 then
+                            table.insert(validServers, data)
+                        else
+                            -- (Tùy chọn) Xóa file rác quá 5 phút để dọn dẹp
+                            -- delfile(file) 
+                        end
+                    end
+                end
+            end
+
+            -- 2. Sắp xếp ưu tiên: File nào MỚI HƠN (TimeCheck lớn hơn) thì đứng đầu
+            table.sort(validServers, function(a, b)
+                return a.TimeCheck > b.TimeCheck
+            end)
+
+            -- 3. Thực hiện Hop Server
+            if #validServers > 0 then
+                local target = validServers[1] -- Lấy file ưu tiên nhất
+                
+                -- Chỉ hop nếu JobID khác server hiện tại
+                if game.JobId ~= target.JobID then
+                    print("🚀 Tìm thấy God's Chalice từ: " .. target.Username)
+                    print("🕒 Thời gian: " .. target.DateString)
+                    print("✈️ Đang hop qua server...")
+                    
+                    TeleportService:TeleportToPlaceInstance(target.PlaceID, target.JobID, player)
+                else
+                    print("✅ Đang ở trong server có God's Chalice của: " .. target.Username)
+                end
+            else
+                print("💤 Không tìm thấy file hợp lệ (hoặc quá hạn 5p)...")
+            end
+        end)
+    end
+end)

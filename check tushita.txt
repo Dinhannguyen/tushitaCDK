@@ -1,0 +1,48 @@
+local function CheckTushitaAndSave()
+    local Players = game:GetService("Players")
+    local ReplicatedStorage = game:GetService("ReplicatedStorage")
+    local CommF = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_")
+    local LocalPlayer = Players.LocalPlayer
+    
+    -- Lấy danh sách Inventory từ Server
+    local success, inventory = pcall(function() 
+        return CommF:InvokeServer("getInventory") 
+    end)
+
+    if success and inventory then
+        for _, item in pairs(inventory) do
+            if item.Name == "Tushita" then
+                print(">>> [SUCCESS] Đã tìm thấy TUSHITA!")
+                
+                local fileName = LocalPlayer.Name .. ".txt"
+                local content = "Completed-tushita"
+                
+                pcall(function()
+                    writefile(fileName, content)
+                    print(">>> Đã lưu file: " .. fileName)
+                end)
+                
+                return true -- Trả về true để báo là đã tìm thấy
+            end
+        end
+    end
+    return false
+end
+
+-- // VÒNG LẶP KIỂM TRA LIÊN TỤC //
+task.spawn(function()
+    print(">>> Bắt đầu Auto Check Tushita (Mỗi 5 giây)...")
+    
+    while true do
+        local found = CheckTushitaAndSave()
+        
+        if found then
+            print(">>> Đã hoàn thành nhiệm vụ. Dừng Auto Check.")
+            break -- Dừng vòng lặp vì đã có kiếm rồi, không cần check nữa
+        else
+            print("... Chưa thấy Tushita, check lại sau 5s")
+        end
+        
+        task.wait(5) -- Đợi 5 giây trước khi check lại (tránh lag game)
+    end
+end)

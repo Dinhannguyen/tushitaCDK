@@ -1,0 +1,53 @@
+-- [[ SCRIPT 1: CHECK GOD'S CHALICE & GỬI FILE ]] --
+
+local HttpService = game:GetService("HttpService")
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local folderName = "mm"
+
+-- Tạo folder nếu chưa có
+if not isfolder(folderName) then
+    makefolder(folderName)
+end
+
+local fileName = folderName .. "/" .. player.Name .. ".txt"
+
+spawn(function()
+    while true do
+        wait(2) -- Check mỗi 2 giây
+        pcall(function()
+            local hasChalice = false
+            
+            -- Kiểm tra trong Balo
+            if player.Backpack:FindFirstChild("God's Chalice") then
+                hasChalice = true
+            end
+            
+            -- Kiểm tra đang cầm trên tay (Character)
+            if player.Character and player.Character:FindFirstChild("God's Chalice") then
+                hasChalice = true
+            end
+
+            if hasChalice then
+                -- Dữ liệu cần lưu
+                local data = {
+                    Username = player.Name,
+                    PlaceID = game.PlaceId,
+                    JobID = game.JobId,
+                    TimeCheck = os.time(), -- Thời gian dạng số (để tính 5 phút)
+                    DateString = os.date("%d/%m/%Y %H:%M:%S") -- Thời gian dạng chữ (để đọc)
+                }
+                
+                -- Ghi file (Encode sang JSON)
+                writefile(fileName, HttpService:JSONEncode(data))
+                print("✅ Đã cập nhật file God's Chalice: " .. data.DateString)
+            else
+                -- Nếu không còn chén mà file vẫn tồn tại -> Xóa file
+                if isfile(fileName) then
+                    delfile(fileName)
+                    print("❌ Đã xóa file (Mất God's Chalice)")
+                end
+            end
+        end)
+    end
+end)
