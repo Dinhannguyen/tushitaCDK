@@ -3,46 +3,81 @@ local function CheckTushitaAndSave()
     local ReplicatedStorage = game:GetService("ReplicatedStorage")
     local CommF = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_")
     local LocalPlayer = Players.LocalPlayer
-    
+
+    -- Không chạy nếu username là baohan_200
+    if LocalPlayer and LocalPlayer.Name == "baohan_200" then
+        warn("⚠️ Script bị tắt cho user: baohan_200")
+        return false
+    end
+
     -- Lấy danh sách Inventory từ Server
-    local success, inventory = pcall(function() 
-        return CommF:InvokeServer("getInventory") 
+    local success, inventory = pcall(function()
+        return CommF:InvokeServer("getInventory")
     end)
 
     if success and inventory then
         for _, item in pairs(inventory) do
             if item.Name == "Tushita" then
                 print(">>> [SUCCESS] Đã tìm thấy TUSHITA!")
-                
+
                 local fileName = LocalPlayer.Name .. ".txt"
                 local content = "Completed-tushita"
-                
+
                 pcall(function()
-                    writefile(fileName, content)
-                    print(">>> Đã lưu file: " .. fileName)
+                    if writefile then
+                        writefile(fileName, content)
+                        print(">>> Đã lưu file: " .. fileName)
+                    else
+                        -- Nếu executor không hỗ trợ writefile, in ra thay vì lưu
+                        print(">>> Executor không hỗ trợ writefile — không thể lưu file.")
+                    end
                 end)
-                
+
                 return true -- Trả về true để báo là đã tìm thấy
             end
         end
+    else
+        -- Nếu pcall thất bại, in lỗi để debug
+        warn("⚠️ Lỗi khi gọi getInventory hoặc inventory trống.")
     end
     return false
 end
 
 -- // VÒNG LẶP KIỂM TRA LIÊN TỤC //
 task.spawn(function()
+    local Players = game:GetService("Players")
+    local LocalPlayer = Players.LocalPlayer
+
+    -- Kiểm tra ngay user trước khi bắt đầu
+    if LocalPlayer and LocalPlayer.Name == "baohan_200" then
+        warn("⚠️ Tạm dừng Auto Check Tushita cho user: baohan_200")
+        return
+    end
+
     print(">>> Bắt đầu Auto Check Tushita (Mỗi 5 giây)...")
-    
+
     while true do
+        -- Nếu trong lúc chạy player respawn, cập nhật lại LocalPlayer
+        if not (LocalPlayer and LocalPlayer.Character) then
+            Players = game:GetService("Players")
+            LocalPlayer = Players.LocalPlayer
+        end
+
+        -- Nếu username thay đổi (hiếm gặp), tắt script nếu đúng tên bị cấm
+        if LocalPlayer and LocalPlayer.Name == "baohan_200" then
+            warn("⚠️ Username hiện tại là baohan_200 — dừng Auto Check.")
+            break
+        end
+
         local found = CheckTushitaAndSave()
-        
+
         if found then
             print(">>> Đã hoàn thành nhiệm vụ. Dừng Auto Check.")
             break -- Dừng vòng lặp vì đã có kiếm rồi, không cần check nữa
         else
             print("... Chưa thấy Tushita, check lại sau 5s")
         end
-        
+
         task.wait(5) -- Đợi 5 giây trước khi check lại (tránh lag game)
     end
 end)
